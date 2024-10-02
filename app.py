@@ -68,7 +68,7 @@ def download(video_id):
             'Referer': 'https://www.youtube.com/',
             'Accept-Language': 'en-US,en;q=0.9',
         },
-        'proxy': 'http://194.147.33.5:8080',  # Используем указанный прокси-сервер
+        'cookies': 'cookies.txt',  # Укажите путь к вашему файлу cookies.txt
         'postprocessors': [
             {
                 'key': 'FFmpegExtractAudio',
