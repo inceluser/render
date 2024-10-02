@@ -75,6 +75,7 @@ def download(video_id):
             'Referer': 'https://www.youtube.com/',
             'Accept-Language': 'en-US,en;q=0.9',
         },
+        'proxy': 'http://122.175.19.164:80',  # Добавление прокси
         'postprocessors': [
             {
                 'key': 'FFmpegExtractAudio',
