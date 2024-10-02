@@ -75,6 +75,12 @@ def download(video_id):
             'Referer': 'https://www.youtube.com/',
             'Accept-Language': 'en-US,en;q=0.9',
         },
+        # Использование куки как строку (если у вас есть куки в виде словаря)
+        'cookies': {
+            'SAPISID': 'your_sapisid_value',
+            'HSID': 'your_hsid_value',
+            # Добавьте другие необходимые куки здесь
+        },
         'postprocessors': [
             {
                 'key': 'FFmpegExtractAudio',
@@ -91,6 +97,9 @@ def download(video_id):
         'writethumbnail': True,
         'embedthumbnail': True,
         'addmetadata': True,
+        # Дополнительные параметры для настройки yt-dlp
+        'retries': 10,  # Количество попыток загрузки при ошибках
+        'geo-bypass': True,  # Обход географических ограничений
     }
 
     try:
