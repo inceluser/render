@@ -14,28 +14,25 @@ FILE_EXPIRATION_TIME = 300  # Удаляем файлы старше 5 мину�
 DOWNLOAD_INTERVAL = 10  # Интервал в секундах между загрузками
 DOWNLOAD_LIMIT = 1  # Максимальное количество загрузок за интервал
 
-# Словарь для хранения времени загрузок для каждого IP
 download_times = {}
 
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
 def cleanup_download_folder():
-    """Функция для удаления старых файлов из папки downloads."""
     while True:
         now = datetime.now()
         for filename in os.listdir(DOWNLOAD_FOLDER):
             file_path = os.path.join(DOWNLOAD_FOLDER, filename)
             if os.path.isfile(file_path):
                 file_mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
-                # Удаляем файл, если он старше FILE_EXPIRATION_TIME
                 if now - file_mod_time > timedelta(seconds=FILE_EXPIRATION_TIME):
                     try:
                         os.remove(file_path)
                         print(f"Deleted old file: {filename}")
                     except Exception as e:
                         print(f"Error deleting file {filename}: {str(e)}")
-        time.sleep(CLEANUP_INTERVAL)  # Пауза перед следующей проверкой
+        time.sleep(CLEANUP_INTERVAL)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -48,21 +45,17 @@ def index():
 
 @app.route('/download/<video_id>', methods=['GET'])
 def download(video_id):
-    ip_address = request.remote_addr  # Получаем IP-адрес пользователя
+    ip_address = request.remote_addr
     current_time = datetime.now()
 
-    # Проверяем, есть ли записи о загрузках для данного IP-адреса
     if ip_address not in download_times:
         download_times[ip_address] = []
 
-    # Удаляем записи, которые старше DOWNLOAD_INTERVAL
     download_times[ip_address] = [t for t in download_times[ip_address] if current_time - t < timedelta(seconds=DOWNLOAD_INTERVAL)]
 
-    # Проверяем, превышает ли количество загрузок лимит
     if len(download_times[ip_address]) >= DOWNLOAD_LIMIT:
         return jsonify({'success': False, 'error': 'Please wait before downloading again.'})
 
-    # Записываем текущее время загрузки
     download_times[ip_address].append(current_time)
 
     url = f'https://www.youtube.com/watch?v={video_id}'
@@ -75,7 +68,6 @@ def download(video_id):
             'Referer': 'https://www.youtube.com/',
             'Accept-Language': 'en-US,en;q=0.9',
         },
-        # Добавляем прокси-сервер
         'proxy': 'http://194.147.33.5:8080',  # Используем указанный прокси-сервер
         'postprocessors': [
             {
@@ -93,9 +85,8 @@ def download(video_id):
         'writethumbnail': True,
         'embedthumbnail': True,
         'addmetadata': True,
-        # Дополнительные параметры для настройки yt-dlp
-        'retries': 10,  # Количество попыток загрузки при ошибках
-        'geo-bypass': True,  # Обход географических ограничений
+        'retries': 10,
+        'geo-bypass': True,
     }
 
     try:
@@ -103,7 +94,6 @@ def download(video_id):
             info_dict = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info_dict).replace('.webm', '.mp3').replace('.m4a', '.mp3')
 
-            # Отправляем файл пользователю
             return send_file(filename, as_attachment=True)
 
     except yt_dlp.DownloadError as e:
@@ -112,9 +102,7 @@ def download(video_id):
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
-    # Запускаем поток для очистки папки downloads
     cleanup_thread = threading.Thread(target=cleanup_download_folder, daemon=True)
     cleanup_thread.start()
     
-    # Убедитесь, что приложение слушает на нужном хосте и порту
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
