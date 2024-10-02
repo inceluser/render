@@ -86,7 +86,6 @@ def download(video_id):
         'writethumbnail': True,
         'embedthumbnail': True,
         'addmetadata': True,
-        'nocheckcertificate': True,  # Новый параметр
     }
 
     try:
