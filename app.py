@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from datetime import datetime, timedelta
+import subprocess
 
 app = Flask(__name__)
 
@@ -65,18 +66,27 @@ def download(video_id):
     download_times[ip_address].append(current_time)
 
     url = f'https://www.youtube.com/watch?v={video_id}'
-    
+
     try:
         yt = YouTube(url)
         stream = yt.streams.filter(only_audio=True).first()  # Получаем первый аудиопоток
         
-        filename = f"{stream.title}.mp3"
+        if stream is None:
+            return jsonify({'success': False, 'error': 'No audio streams available for this video.'})
+
+        filename = f"{stream.title}.webm"  # Сохраняем как webm для последующей обработки FFmpeg
         filepath = os.path.join(DOWNLOAD_FOLDER, filename)
 
         stream.download(output_path=DOWNLOAD_FOLDER, filename=filename)
 
+        # Конвертируем в mp3 с помощью FFmpeg
+        mp3_filename = f"{stream.title}.mp3"
+        mp3_filepath = os.path.join(DOWNLOAD_FOLDER, mp3_filename)
+
+        subprocess.run(['ffmpeg', '-i', filepath, mp3_filepath])  # Конвертация в mp3
+
         # Отправляем файл пользователю
-        return send_file(filepath, as_attachment=True)
+        return send_file(mp3_filepath, as_attachment=True)
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
