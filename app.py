@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
-from pytube import Search
-import yt_dlp
+from pytube import Search, YouTube
 import os
 import threading
 import time
@@ -67,42 +66,18 @@ def download(video_id):
 
     url = f'https://www.youtube.com/watch?v={video_id}'
     
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': f'{DOWNLOAD_FOLDER}/%(title)s.%(ext)s',
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36',
-            'Referer': 'https://www.youtube.com/',
-            'Accept-Language': 'en-US,en;q=0.9',
-        },
-        'postprocessors': [
-            {
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            },
-            {
-                'key': 'EmbedThumbnail',
-            },
-            {
-                'key': 'FFmpegMetadata',
-            }
-        ],
-        'writethumbnail': True,
-        'embedthumbnail': True,
-        'addmetadata': True,
-    }
-
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info_dict).replace('.webm', '.mp3').replace('.m4a', '.mp3')
+        yt = YouTube(url)
+        stream = yt.streams.filter(only_audio=True).first()  # Получаем первый аудиопоток
+        
+        filename = f"{stream.title}.mp3"
+        filepath = os.path.join(DOWNLOAD_FOLDER, filename)
 
-            # Отправляем файл пользователю
-            return send_file(filename, as_attachment=True)
+        stream.download(output_path=DOWNLOAD_FOLDER, filename=filename)
 
-    except yt_dlp.DownloadError as e:
-        return jsonify({'success': False, 'error': str(e)})
+        # Отправляем файл пользователю
+        return send_file(filepath, as_attachment=True)
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
