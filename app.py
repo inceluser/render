@@ -91,8 +91,6 @@ def download(video_id):
         'writethumbnail': True,
         'embedthumbnail': True,
         'addmetadata': True,
-        # Добавляем прокси
-        'proxy': '212.127.93.185:8081',  # Указываем прокси-сервер
     }
 
     try:
